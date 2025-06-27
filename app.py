@@ -1,6 +1,8 @@
-import streamlit as st
+from flask import Flask, request, jsonify
 import requests
 from bs4 import BeautifulSoup
+
+app = Flask(__name__)
 
 def get_naver_blog_content(url):
     headers = {"User-Agent": "Mozilla/5.0"}
@@ -19,14 +21,16 @@ def get_naver_blog_content(url):
         return "본문 영역을 찾지 못했습니다."
     return main.get_text(strip=True)
 
-st.title("네이버 블로그 본문 추출기 (Streamlit)")
+@app.route('/crawl', methods=['POST'])
+def crawl():
+    data = request.get_json()
+    url = data.get('url')
+    content = get_naver_blog_content(url)
+    return jsonify({'content': content})
 
-url = st.text_input("네이버 블로그 글 URL을 입력하세요", placeholder="https://blog.naver.com/yourid/123456789")
+@app.route('/healthz')
+def healthz():
+    return "ok"
 
-if st.button("본문 추출"):
-    if url:
-        with st.spinner("본문을 가져오는 중입니다..."):
-            content = get_naver_blog_content(url)
-        st.text_area("본문 결과", value=content, height=400)
-    else:
-        st.warning("URL을 입력하세요.")
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=10000)
